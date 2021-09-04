@@ -1,0 +1,257 @@
+---
+title: "Housing_Data_Assignment"
+author: "Theodore Koby-Hercsky"
+date: "5/9/2021"
+output: 
+  word_document: default
+  html_document: default 
+  pdf_document: default
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse", "effects", "statmod", "Rcmdr")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+library(readxl)
+library(pastecs)
+library(psych)
+library(statmod)
+library(effects)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE
+)
+```
+
+## Set the working directory to the root of your DSC 520 directory
+setwd("~/Documents/Bellevue University Classes/DSC520/assignments/assignment06")
+
+## The housing.csv file 
+```{r}
+## I am importing readr from the library so I can use the read_csv function to create my student survey data frame.
+library(readr)
+## Creating the student survey data frame by using the read_csv function to pull my student survey data. 
+Housing_df <- read_csv("data/housing.csv")
+Housing_df
+```
+
+#Explain any transformations or modifications you made to the dataset
+
+## I modified the sales warning variable by changing the numbers that are useless to us to being a yes for a sales warning and no if there was no data in that field. 
+
+## I also inputted the city name if the line was blank in the city name variable by checking the name on the postal city name variable.
+
+## Create two variables; one that will contain the variables Sale Price and Square Foot of Lot (same variables used from previous assignment on simple regression) and one that will contain Sale Price and several additional predictors of your choice. Explain the basis for your additional predictor selections.
+
+```{r two variables, include=TRUE}
+## I fit a linear model using the `sq_ft_lot` variable as the predictor and `sale_price` as the outcome
+
+square_foot_price_lm <- lm(sale_price ~ sq_ft_lot, data = Housing_df)
+
+## When we fit our linear model by using our sq_ft_lot variable as the predictor and sale_price as the outcome with the Housing_df as our data we see coefficients for intercept at 6.418 
+
+square_foot_price_lm
+
+## Seen below is a linear model using the `zip_code`, `square_feet_total_living`, `bedrooms`, and `bath_full_count' variables as the predictors and `sale_price` as the outcome
+
+sale_price_lm <-  lm(sale_price ~ zip_code + square_feet_total_living + bedrooms + bath_full_count, data = Housing_df)
+
+## We fit the linear model by using our variables as the predictor and sale_price as the outcome with the Housing_df as our data we see coefficients for intercept and `zip_code`, `square_feet_total_living`, `bedrooms`, and `bath_full_count' which is the slope for the predictors. 
+
+sale_price_lm
+```
+
+## Execute a summary() function on two variables defined in the previous step to compare the model results. What are the R2 and Adjusted R2 statistics? Explain what these results tell you about the overall model. Did the inclusion of the additional predictors help explain any large variations found in Sale Price?
+
+```{r summary, include=TRUE}
+## I will view the full report by using summary of my square_foot_price_lm model
+## As seen below we see that the Multiple R-squared: is 0.01435 and the Adjusted R-squared: is 0.01428
+## Which is expressed as a percentage between 0 and 100, with 100 signaling perfect correlation and zero no correlation at all. As in the summary of the square_foot_price_lm model we find that the Multiple R-squared and Adjusted R-squared are less than 2% which is very low meaning there is very little correlation. Which I find to be quite interesting as you would expect the square footage to have a higher impact on the price.
+summary(square_foot_price_lm)
+
+## The Summary for sale_price_lm can been seen when we use the Summary function seen below
+## As seen below we see that the Multiple R-squared: is 0.2121 and the Adjusted R-squared: is 0.2118
+## As for the summary of the sale_price_lm model we find that the Multiple R-squared and Adjusted R-squared are significantly higher than that of the square_foot_price_lm meaning there is a higher correlation in comparison to the previous test. While in the inclusion of the additional predictors helped explain the variance in sales price as the zip code, bedrooms, and bathrooms have helped increase the sales price. 
+summary(sale_price_lm)
+```
+
+
+## Considering the parameters of the multiple regression model you have created. What are the standardized betas for each parameter and what do the values indicate?
+```{r standardize, include=TRUE}
+install.packages("car")
+library(car)
+## I used the comparecoefs to dive deeper into this question and found that the the most significant difference lied within the bedrooms and full baths.
+compareCoefs(square_foot_price_lm, sale_price_lm)
+```
+
+## Calculate the confidence intervals for the parameters in your model and explain what the results indicate.
+```{r confidence, include=TRUE}
+library(MASS, pos = 15)
+## This shows us a 95% confidence intervals of 631569.6 645448.7 for the parameter sq_ft_lot.
+with(Housing_df, (t.test(sale_price, sq_ft_lot, alternative = 'two.sided', conf.level = .95, paired = TRUE)))
+```
+
+
+## Assess the improvement of the new model compared to your original model (simple regression model) by testing whether this change is significant by performing an analysis of variance.
+```{r improvement, include=TRUE}
+## I used the compareCoefs again to see if the change is significant and we found that we have a significant difference between model 1 and 2. 
+compareCoefs(square_foot_price_lm, sale_price_lm)
+
+## I also created anovas for each model separately to see the differences on their own.
+
+## In this test we will be performing an analysis of variance on the square_foot_price_lm 
+square_footAnova <- aov(sale_price ~ sq_ft_lot, data = Housing_df)
+## We see that the Estimated effects may be unbalanced as the Residual standard error: 401483.8 which shows a significant room for error
+square_footAnova
+
+## In this test we will be performing an analysis of variance on the sale_price_lm  
+SaleAnova <- aov(sale_price ~ zip_code + square_feet_total_living + bedrooms + bath_full_count, data = Housing_df)
+## We see that the Estimated effects may be unbalanced as the Residual standard error: 359008.6
+SaleAnova
+```
+
+## Perform casewise diagnostics to identify outliers and/or influential cases, storing each function's output in a dataframe assigned to a unique variable name.
+
+```{r diagnostics, include=TRUE}
+## I created a data frame that is assigned to a unique variable name known as uniquehousing which we see the Coefficients for each variable we could enter.
+install.packages("outliers")
+library(outliers)
+
+uniquehousing <- lm(formula = sale_price ~ sale_reason + sale_instrument + zip_code + building_grade + square_feet_total_living + bedrooms + bath_full_count + bath_half_count + bath_3qtr_count + year_built + year_renovated + sq_ft_lot, data = Housing_df)
+
+uniquehousing
+
+## Next I perform an outlier test on the new data frame and the other two existing ones.
+
+outlierTest(uniquehousing)
+
+## Next I will remove outliers as seen below:
+
+Updated_Housing_df <- Housing_df[-c(11992,6430,6438,6437,4649,6431,6436,6441,6432,6442),]
+
+## Next I perform an outlier test on the square_foot_price_lm
+
+outlierTest(square_foot_price_lm)
+
+## Next I will remove outliers as seen below:
+
+Updated_Housing_df <- Housing_df[-c(6438,6437,6441,6433,6434,6430,6442,6439,6431,6429),]
+
+## Next I perform an outlier test on the sale_price_lm
+
+outlierTest(sale_price_lm)
+
+## Next I will remove outliers as seen below:
+
+Updated_Housing_df <- Housing_df[-c(11992,4649,6430,6437,6438,6431,6436,6432,6433,6434),]
+
+## I shall show the updated Updated_Housing_df
+str(Updated_Housing_df)
+
+## updated uniquehousing data frame
+
+updated_square_foot_price_lm <- lm(sale_price ~ sq_ft_lot, data = Updated_Housing_df)
+
+## After that I will updated the lm with all the variables I used
+
+reupdated_square_foot_price_lm <- lm(sale_price ~ sale_reason + sale_instrument + zip_code + building_grade + square_feet_total_living + bedrooms + bath_full_count + bath_half_count + bath_3qtr_count + year_built + year_renovated + sq_ft_lot, data = Updated_Housing_df)
+
+reupdated_square_foot_price_lm
+
+```
+
+## Calculate the standardized residuals using the appropriate command, specifying those that are +-2, storing the results of large residuals in a variable you create.
+
+```{r standardized, include=TRUE}
+## I decided to update the hatvalues, hatvalues, covariance.ratios, standardized.residuals, studentized.residuals, cooks.distance, and dfbeta.
+Updated_Housing_df$dfbeta <- dfbeta(reupdated_square_foot_price_lm)
+Updated_Housing_df$leverage <- hatvalues(reupdated_square_foot_price_lm)
+Updated_Housing_df$covariance.ratios <- covratio(reupdated_square_foot_price_lm)
+Updated_Housing_df$standardized.residuals <- rstandard(reupdated_square_foot_price_lm)
+Updated_Housing_df$studentized.residuals <- rstudent(reupdated_square_foot_price_lm)
+Updated_Housing_df$cooks.distance <- cooks.distance(reupdated_square_foot_price_lm)
+
+## I used the str() function to calculate the standardized residuals
+str(Updated_Housing_df)
+```
+
+## Use the appropriate function to show the sum of large residuals.
+```{r appropriate, include=TRUE}
+## I used large.residual, standardized.residuals > 2, and studentized.residuals < -2 to show the sum of large residuals
+Updated_Housing_df$large.residual <- Updated_Housing_df$standardized.residuals > 2 | Updated_Housing_df$studentized.residuals < -2
+str(Updated_Housing_df)
+
+```
+
+## Which specific variables have large residuals (only cases that evaluate as TRUE)?
+
+```{r variables, include=TRUE}
+## Next we will use the sum to show the sum of the large residuals that evaluate as TRUE to be 330
+sum(Updated_Housing_df$large.residual)
+
+## After we have received our specific variables we can put it into a table.
+
+Updated_Housing_df[Updated_Housing_df$large.residual , c("sale_price", "sale_reason", "sale_instrument", "zip_code", "building_grade", "square_feet_total_living", "bedrooms", "bath_full_count", "bath_half_count", "bath_3qtr_count", "year_built", "year_renovated", "sq_ft_lot")]
+
+```
+
+## Investigate further by calculating the leverage, cooks distance, and covariance rations. Comment on all cases that are problematics
+
+```{r Investigate, include=TRUE}
+## Next I use the Updated_Housing_df to calculate the leverage, cooks distance, and covariance rations
+Updated_Housing_df[Updated_Housing_df$large.residual , c("leverage" , "cooks.distance","covariance.ratios")]
+
+```
+
+## Perform the necessary calculations to assess the assumption of independence and state if the condition is met or not.
+
+```{r Perform, include=TRUE}
+## I used the durbin Watson test DWT to determine if the necessary calculations to assess the assumption of independence and state if the condition is met and I conclude yes it is possible as the Durbin Watson test is about the correlation of the residuals. If the data are ordered in some way, you'll get a significant DW test
+
+dwt(reupdated_square_foot_price_lm)
+```
+
+## Perform the necessary calculations to assess the assumption of no multicollinearity and state if the condition is met or not.
+
+```{r calculations, include=TRUE}
+## In this calculation we can assess multicollinearity by computing the variance inflation factor known as VIF which measures how much the variance of a regression coefficient is inflated due to multicollinearity in the model. As the smallest possible value of VIF is one which is the absence of multicollinearity. While a VIF value that exceeds 5 or 10 indicates a problematic amount of collinearity.
+
+car::vif(reupdated_square_foot_price_lm)
+
+## As seen above the VIF score for the predictor variable square_feet_total_living is the highest we see with a VIF = 4.22 which would be the only one that is close enough to 5 that could even be thought to might be problematic. But in this case I believe none of the variables in my lm would be problematic.
+```
+
+## Visually check the assumptions related to the residuals using the plot() and hist() functions. Summarize what each graph is informing you of and if any anomalies are present.
+
+```{r graph, include=TRUE}
+## In this graph we see the arg frequency that is related to the residual of the updated housing data frame
+install.packages("Rcmdr")
+
+## In this bar chart we saw that out of all our properties we found that over 12,000 are not considered large residual with a small amount being large residual.
+
+ggplot(Updated_Housing_df, aes(large.residual))+geom_bar(aes(fill = large.residual))
+
+with(Updated_Housing_df, Hist(standardized.residuals, scale="frequency", col="blue", xlab="Residuals"))
+
+```
+
+## Overall, is this regression model unbiased? If an unbiased regression model, what does this tell us about the sample vs. the entire population model?
+
+## I believe the regression model is unbiased as we see in our VIF that all our variables are non problematic. With this being said in regards to our sample vs the entire population model I would say it can be biased as we can change our sample to only view variables that we would know that would pair well together as the entire population we would see outliers and data that doesn't really reflect our needs. 
+

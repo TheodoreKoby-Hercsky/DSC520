@@ -1,0 +1,434 @@
+---
+title: "Part2_Covid-19_Final_Project_KobyHercsky_Theodore"
+author: "Theodore Koby-Hercsky"
+date: "5/22/2021"
+output: 
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse", "effects", "statmod", "Rcmdr")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+library(readxl)
+library(pastecs)
+library(psych)
+library(statmod)
+library(effects)
+library(plotly)
+library(zoo)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE)
+```
+
+
+## Set My working directory set to my final project
+setwd("~/Documents/Bellevue University Classes/DSC520/Final Project")
+
+## How to import and clean my data
+```{r load Vaccine data, include=TRUE}
+## Pulling the Dataframe for the Vaccine administered for Pfizer by state by week data set.
+
+COVID_19_Vaccine_Distribution_Pfizer <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Pfizer.csv")
+View(COVID_19_Vaccine_Distribution_Pfizer)
+head(COVID_19_Vaccine_Distribution_Pfizer)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Pfizer)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Pfizer)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Pfizer <- subset(COVID_19_Vaccine_Distribution_Pfizer, COVID_19_Vaccine_Distribution_Pfizer$`1st Dose Allocations` >= "1")
+
+## Next I will be removing the variable 2nd Dose Allocations as these values are the same as the values in the 1st Dose Allocations
+COVID_19_Vaccine_Distribution_Pfizer$`2nd Dose Allocations` <- NULL
+
+## I also want to add a new variable to my dataframe that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Pfizer$Company <- "Pfizer"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+
+## Also when viewing this data frame I can filter the 1st dose to determine which states are giving the most doses of the Pfizer vaccine as it showed California was the highest
+
+
+## Pulling the Dataframe for the Vaccine administered for Moderna by state by week data set
+
+COVID_19_Vaccine_Distribution_Moderna <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Moderna.csv")
+View(COVID_19_Vaccine_Distribution_Moderna)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Moderna)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Moderna)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Moderna <- subset(COVID_19_Vaccine_Distribution_Moderna, COVID_19_Vaccine_Distribution_Moderna$`1st Dose Allocations` >= "1")
+
+## Next I will be removing the variable 2nd Dose Allocations as these values are the same as the values in the 1st Dose Allocations
+COVID_19_Vaccine_Distribution_Moderna$`2nd Dose Allocations` <- NULL
+
+## I also want to add a new variable to my dataframe that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Moderna$Company <- "Moderna"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+ 
+## Pulling the Dataframe for the Vaccine administered for Johnson and Johnson by state by week data set.
+COVID_19_Vaccine_Distribution_Johnson <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Janssen.csv")
+View(COVID_19_Vaccine_Distribution_Johnson)
+head(COVID_19_Vaccine_Distribution_Johnson)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Johnson)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Johnson)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Johnson)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Johnson <- subset(COVID_19_Vaccine_Distribution_Johnson, COVID_19_Vaccine_Distribution_Johnson$`1st Dose Allocations` >= "1")
+
+## I also want to add a new variable to my dataframe that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Johnson$Company <- "Johnson"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Johnson)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+```
+
+```{r load Covid-19 data, include=TRUE}
+## The first Data Set is the Covid-19 Deaths by race, sex, and age data frame that I will pull and clean
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age <- read_csv("CDC Covid Data/AH_Provisional_COVID-19_Deaths_by_Educational_Attainment__Race__Sex__and_Age.csv")
+View(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+head(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## After viewing this I am going to delete the variable date as of and also use the names function to update the variables names that are needed.
+## Delete variable date as of.
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Data as of` <- NULL
+## Change variable names
+names(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)[3]<-"Education"
+names(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)[4]<-"Race"
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## As seen above our dates are stored as a character which I am going to update to be a date and also delete the date as of as that is unneeded.
+
+## change the format of the start date
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Start Date` <- as.Date(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`End Date` <- as.Date(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`End Date`, format = "%m/%d/%y")
+
+## I also noticed earlier that the variable education has some Unknown values which I would like to remove due to the fact that these values are not justifiable as the can be bad data.
+
+## As seen below I removed any value that was Unknown in Education
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age <-COVID_19_Deaths_by_Educational_Race_Sex_and_Age[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Education !="Unknown", ]
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will pull the data frame Covid-19 Deaths by education and race and filter and clean up this data. 
+COVID_19_Deaths_by_Race_and_Educational <- read_csv("CDC Covid Data/AH_Provisional_COVID-19_Deaths_by_Race_and_Educational_Attainment.csv")
+View(COVID_19_Deaths_by_Race_and_Educational)
+head(COVID_19_Deaths_by_Race_and_Educational)
+
+## After viewing this I am going to Delete variable date as of and use the names function to update the variables names that are needed.
+COVID_19_Deaths_by_Race_and_Educational$`Data as of` <- NULL
+names(COVID_19_Deaths_by_Race_and_Educational)[3]<-"Education"
+names(COVID_19_Deaths_by_Race_and_Educational)[4]<-"Race"
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_by_Race_and_Educational)
+
+## As seen above our dates are stored as a character which I am going to update to be a date.
+
+## change the format of the start date
+COVID_19_Deaths_by_Race_and_Educational$`Start Date` <- as.Date(COVID_19_Deaths_by_Race_and_Educational$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_by_Race_and_Educational$`End Date` <- as.Date(COVID_19_Deaths_by_Race_and_Educational$`End Date`, format = "%m/%d/%y")
+
+## As seen below I removed any value that was Unknown in Education
+COVID_19_Deaths_by_Race_and_Educational <-COVID_19_Deaths_by_Race_and_Educational[COVID_19_Deaths_by_Race_and_Educational$Education !="Unknown", ]
+
+## The final step we will take for this data frame is to use complete.case and summary function to double check our data before moving on.
+complete.cases(COVID_19_Deaths_by_Race_and_Educational)
+summary(COVID_19_Deaths_by_Race_and_Educational)
+
+## The final data set I will be pulling and cleaning is the Covid-19 Deaths by age in years
+
+COVID_19_Deaths_Counts_by_Age_in_Years <- read_csv("CDC Covid Data/Provisional_COVID-19_Deaths_Counts_by_Age_in_Years.csv")
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## First I will be deleting the variable date as of.
+COVID_19_Deaths_Counts_by_Age_in_Years$`Data as of` <- NULL
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## As seen above our dates are stored as a character which I am going to update to be a date.
+
+## change the format of the start date
+COVID_19_Deaths_Counts_by_Age_in_Years$`Start Date` <- as.Date(COVID_19_Deaths_Counts_by_Age_in_Years$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_Counts_by_Age_in_Years$`End Date` <- as.Date(COVID_19_Deaths_Counts_by_Age_in_Years$`End Date`, format = "%m/%d/%y")
+
+## I am going to create a new variable to add new insights on the percentage of deaths that are from Covid-19.
+
+COVID_19_Deaths_Counts_by_Age_in_Years["COVID-19 Death Percentage"] <- COVID_19_Deaths_Counts_by_Age_in_Years$`COVID-19 Deaths`/COVID_19_Deaths_Counts_by_Age_in_Years$`Total deaths`
+
+## The final step we will take for this data frame is to use complete.case and summary function to double check our data before moving on.
+complete.cases(COVID_19_Deaths_Counts_by_Age_in_Years)
+summary(COVID_19_Deaths_Counts_by_Age_in_Years)
+```
+
+### What do you not know how to do right now that you need to learn to import and cleanup your dataset?
+
+## What does the final data set look like?
+### With a clean dataset, show what the final data set looks like. However, do not print off a data frame with 200+ rows; show me the data in the most condensed form possible.
+```{r Cleaned data sets, include=TRUE}
+## I determined the best way to show the most condensed version of my data is to use the str() function which shows the format of the data and a couple values from each variable. While indicating if the variable is a date, character, and or number.
+
+## The first str is for the data frame for the Pfizer vaccine 
+str(COVID_19_Vaccine_Distribution_Pfizer)
+
+## The next str is for the data frame for the Moderna vaccine 
+str(COVID_19_Vaccine_Distribution_Moderna)
+
+## The following str is for the data frame for the Johnson & Johnson vaccine
+str(COVID_19_Vaccine_Distribution_Johnson)
+
+## This str is for the data frame for the COVID-19 Death rate that is organized by the education, race, sex, and age
+str(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## The following str is for the data frame that is targeting the COVID-19 Deaths by the education and race only
+str(COVID_19_Deaths_by_Race_and_Educational)
+
+## Last but not least the following str is for the data frame that is targeting the amount of deaths due to the COVID-19 virus by age but in years instead of an age group.
+str(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## After viewing each of these str of data I believe each and every one of these data frames provides knowledgeable data that can help target our key questions.
+```
+
+
+## Research questions and Questions for future steps.
+
+## 1.	Out of the three Pfizer, Moderna, and Johnson and Johnson vaccine for the week of 05/10/2021 which company has the highest number of vaccinations administered? 
+## a.	In regard to the number of vaccinations administered which state had the highest rate for each company?
+## b.	In regard to the number of vaccinations administered which state had the lowest rate for each company?
+```{r Summary of Vaccine, include=TRUE}
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+```
+
+
+## As seen above is the summary of all our data for each companies shot. As shown the the Moderna has the highest doses allocated at 672600 while Pfizer is right behind at 644670 being its max and Johnson last at 572700. I will further research and create new data frames to only look at data for the week of 5/10/2021.
+
+## 2.	what percentage of deaths reported were solely due to Covid-19?
+## a.	When it comes to age and sex which combination had the highest death rate for each sex and age group? 
+## b.	As most think the elderly population is the highest at risk for death from the virus but what percentage of deaths in the elderly population was from Covid-19 and what percentage for other illnesses besides Covid-19?
+```{r Summary Vac, include=TRUE}
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+```
+
+
+## As seen above the max deaths for COVID-19 is 76871.0 while the total deaths is 670295.0. We can easily calculate the percent of COVID-19 deaths by dividing COVID-19 deaths by total deaths. As seen below: Which shows a 11.47% COVID-19 death rate
+```{r divide, include=TRUE}
+76871.0 /670295.0
+```
+
+
+## 3.	When it comes to race which ethnicity did, we find to have the highest death rate from Covid-19?
+## a.	Did the education level have an effect on the death rate of different ethnicities?
+
+```{r summary Covid, include=TRUE}
+summary(COVID_19_Deaths_by_Race_and_Educational)
+```
+
+
+## 4.	In the time period of 01/01/2020 to 04/30/2021 did we see an increase in Covid-19 deaths as the age of the individuals rise? If so, did sex have an effect on the number of deaths?
+
+```{r summary Covid death, include=TRUE}
+summary(COVID_19_Deaths_Counts_by_Age_in_Years)
+```
+
+## Questions for future steps.
+## A question for future steps would be to determine a seemless way to combine all three vaccine data frames together that will make sense with the types of variables each of them have.
+
+
+
+## What information is not self-evident?
+
+## The current information that we have for vaccines rates is not self-evident on which company has the highest rate given per week.
+
+## While the information on race is not self-evident on who has the highest death rate from the COVID-19 virus.
+
+### Discuss how you plan to uncover new information in the data that is not self-evident.
+
+## I am going to pull a certain week from each vaccines data frames and calculate which company had the highest rate of vaccination and which states had the highest from each.
+
+### What are different ways you could look at this data to answer the questions you want to answer?
+
+## We can look at certain dates to determine the amount of deaths that are due to COVID-19 that week.
+
+## Also I can filter by ages to see the mount of deaths that are for each age group.
+
+### Seen below is some ways I plan to slice and dice the data in different ways, create new variables, or join separate data frames to create new summary information? Explain. That can be viewed with the summary function to shine some light on ome key questions.
+
+```{r Slice data sets, include=TRUE}
+## The data set titled COVID_19_Deaths_by_Educational_Race_Sex_and_Age is seen below which I will determine how I can slice and dice to create new information.
+
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## I am going to create a new variable to add new insights on the percentage of deaths that are from Covid-19.
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age["COVID-19 Death Percentage"] <- COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`COVID-19 Deaths`/ COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Total Deaths`
+
+## Use summary to search for NAs or other issues with new variable
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will get rid of ant NA that have occurred due to the fact there are zeros in both the COVID-19 deaths and total deaths variables
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age[is.na(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)] <- 0.00
+
+## View summary again to show we have no more NAs
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will view the COVID_19_Deaths_Counts_by_Age_in_Years data frame to see if we can create any new variable.
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+## As seen in the data frame we can add a new variable that calculates the deaths that are not related to COVID-19
+COVID_19_Deaths_Counts_by_Age_in_Years["Deaths Unrelated to COVID-19"] <- COVID_19_Deaths_Counts_by_Age_in_Years$`Total deaths`-COVID_19_Deaths_Counts_by_Age_in_Years$`COVID-19 Deaths`
+
+## As seen in the the data frame now as age goes up the amount of deaths due to COVID-19 goes up and down as the age goes down with a little spike for 1 year old. 
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## Next I will view the COVID_19_Deaths_by_Race_and_Educational data frame to see if we can create any new variable.
+View(COVID_19_Deaths_by_Race_and_Educational)
+head(COVID_19_Deaths_by_Race_and_Educational)
+## As seen in the data frame we can add new variables that calculates the deaths that are not related to COVID-19 and percentage of deaths that are due to COVID-19
+## Deaths Unrelated to COVID-19
+COVID_19_Deaths_by_Race_and_Educational["Deaths Unrelated to COVID-19"] <- COVID_19_Deaths_by_Race_and_Educational$`Total Deaths`-COVID_19_Deaths_by_Race_and_Educational$`COVID-19 Deaths`
+## COVID-19 Death Percentage
+COVID_19_Deaths_by_Race_and_Educational["COVID-19 Death Percentage"] <- COVID_19_Deaths_by_Race_and_Educational$`COVID-19 Deaths`/COVID_19_Deaths_by_Race_and_Educational$`Total Deaths`
+## Use summary function to view the new added variables
+summary(COVID_19_Deaths_by_Race_and_Educational)
+## As we can see we have a lot more deaths that are unrelated to COVID-19 than deaths that are from COVID-19 which will help tie into key questions I have in regards to COVID-19 and the whole epidemic in general.
+```
+
+### What types of plots and tables will help you to illustrate the findings to your questions? Ensure that all graph plots have axis titles, legend if necessary, scales are appropriate, appropriate geoms used, etc.).
+
+```{r filter and ggplot, include=TRUE}
+## First I will view all data sets for the company Vaccines.
+View(COVID_19_Vaccine_Distribution_Pfizer)
+head(COVID_19_Vaccine_Distribution_Pfizer)
+View(COVID_19_Vaccine_Distribution_Moderna)
+head(COVID_19_Vaccine_Distribution_Moderna)
+View(COVID_19_Vaccine_Distribution_Johnson)
+head(COVID_19_Vaccine_Distribution_Johnson)
+
+## Next I will create new data frames by filtering my data sets to only have data for 2020-05-10.
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Pfizer
+Date_COVID_19_Vaccine_Distribution_Pfizer<-filter(COVID_19_Vaccine_Distribution_Pfizer, COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Pfizer)
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Pfizer vaccine at 575,640 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Pfizer, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Moderna
+Date_COVID_19_Vaccine_Distribution_Moderna<-filter(COVID_19_Vaccine_Distribution_Moderna, COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Moderna)
+head(Date_COVID_19_Vaccine_Distribution_Moderna)
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Moderna vaccine at 438,100 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Moderna, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Moderna
+Date_COVID_19_Vaccine_Distribution_Johnson<-filter(COVID_19_Vaccine_Distribution_Johnson, COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Johnson)
+head(Date_COVID_19_Vaccine_Distribution_Johnson)
+
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Johnson & Johnson vaccine at 67,600 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Johnson, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## As seen in these plots we can state that California has reached the highest doses allocated by any state for each companies vaccine while the Pfizer vaccine has rained supreme over the other vaccines. 
+
+## Next I am going to create values for the sum of doses for each company for the week of 2020-05-10 and vectors for the amounts and company names.
+Pfizer_1st_Dose_Sum <- sum(COVID_19_Vaccine_Distribution_Pfizer$`1st Dose Allocations`)
+Moderna_1st_Dose_Sum <-sum(COVID_19_Vaccine_Distribution_Moderna$`1st Dose Allocations`)
+Johnson_1st_Dose_Sum <-sum(COVID_19_Vaccine_Distribution_Johnson$`1st Dose Allocations`)
+Company <- c("Pfizer", "Moderna", "Johnson & Johnson")
+Sum_of_Doses <- c(78987870, 68561180, 12644800)
+
+## Create data frame from the Company and Sum of doses values
+Sum_of_Vaccine <- data.frame(Company, Sum_of_Doses)
+View(Sum_of_Vaccine)
+head(Sum_of_Vaccine)
+## Next I will create a bar chart that shows the doses allocated by each company in the United States for the week of 2020-05-10 that shows how many vaccines Moderna and Pfizer administered in comparison to Johnson & Johnson.
+ggplot(Sum_of_Vaccine, aes(x=`Company`, y=`Sum_of_Doses`))+geom_col(aes(fill = `Company`))
+```
+
+
+## Do you plan on incorporating any machine learning techniques to answer your research questions? Explain.
+## I plan on using lm() function to create a linear model to predict what the missing data would be for the COVID-19 Deaths, Total Deaths, and COVID-19 Death Percentage variable in the data frame COVID_19_Deaths_by_Educational_Race_Sex_and_Age which will allow me to predict the empty slots by comparing them to similar data I have on these variable.
+
+```{r death header, include=TRUE}
+View(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+head(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+```
+
+## Questions for future steps.
+### What do you not know how to do right now that you need to learn to answer your questions?
+## I am going to need to brush up on how to extract uneeded characters in my values in my COVID-19 Death rates data frames especially in the age and race variables to clean them up.
+
+### How can you incorporate the pipe (%>%) operator to make your code more efﬁcient?
+## After working on this assignment I determined I can incorporate pipe in my project to help me make my filtered data more ledgable and easier to follow.

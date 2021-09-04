@@ -1,0 +1,180 @@
+---
+title: "assignment_07_Koby-HercskyTheodore"
+author: "Theodore Koby-Hercsky"
+date: "5/8/2021"
+output: 
+  word_document: default
+  pdf_document: default
+  html_document: default 
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE
+)
+```
+
+## Set the working directory to the root of your DSC 520 directory
+setwd("~/Documents/Bellevue University Classes/DSC520/assignments/assignment07")
+
+## The heights.csv file 
+```{r}
+## I am importing readr from the library so I can use the read_csv function to create my student survey data frame.
+library(readr)
+## Creating the student survey data frame by using the read_csv function to pull my student survey data. 
+heights_df <- read_csv("data/r4ds/heights.csv")
+heights_df
+```
+
+# Fit a linear model
+```{r earn_linear_model, include=TRUE}
+## Seen below is a linear model using the `height`, `age`, `sex`, `race`, and `ed` variables as the predictors and `earn` as the outcome
+earn_lm <-  lm(earn ~ height + age + sex + race + ed, data = heights_df)
+## When we fit our linear model by using our variables as the predictor and earn as the outcome with the heights_df as our data we see coefficients for intercept and height, age, sex, race, and ed which is the slope for the predictors. 
+earn_lm
+## I will view the full report by using summary of my earn_lm model
+## As seen below we see that the max residual to be at 158723 with a median at -2208.
+## While we see three stars against regression coefficients that implies the independent variables are highly correlated with dependent variable earn with a linear relationship.
+summary(earn_lm)
+```
+
+## Prediction data frame
+```{r prediction, include=TRUE}
+## Created a new heights test data frame to incorporate different heights
+newheight_test_df <- data.frame(height = c(71.2,62.5,75.5,74.8,76.8,61.1,74.2,75.9,77.3,73.5))
+newheight_test_df
+
+## Created a new age test data frame to incorporate different ages 
+newage_test_df <- data.frame(age = c(21,16,28,39,50,43,69,49,76,36))
+newage_test_df
+
+## Created a new sex test data frame to incorporate different sex 
+newsex_test_df <- data.frame(sex = c('male','female','male','male','male','female','male','male','male','male'))
+newsex_test_df
+
+## Created a new race test data frame to incorporate different race 
+newrace_test_df <- data.frame(race = c('other','other','hispanic','white','other','hispanic','white','hispanic','other','hispanic'))
+newrace_test_df
+
+## Created a new ed test data frame to incorporate different ed
+newed_test_df <- data.frame(ed = c(17,16,17,18,19,15,16,18,15,19))
+newed_test_df
+
+## Last we create a new test data frame that combines all the new test data frames we just created.
+new_test_df <- data.frame(height = c(71.2,62.5,75.5,74.8,76.8,61.1,74.2,75.9,77.3,73.5), age = c(21,16,28,39,50,43,69,49,76,36), sex = c('male','female','male','male','male','female','male','male','male','male'), race = c('other','other','hispanic','white','other','hispanic','white','hispanic','other','hispanic'), ed = c(17,16,17,18,19,15,16,18,15,19))
+new_test_df
+
+## Next we will be creating a predictions using `predict()` function by using all the new test data frames we created.
+
+## In this prediction I use the my new test data frames set to equal to the correct variables and earn set to predict from our earn_lm and the new data that was created in the data frame new_test_df.
+
+predicted_df <- data.frame(ed = newed_test_df, race = newrace_test_df, height = newheight_test_df, age = newage_test_df, sex = newsex_test_df, earn = predict(earn_lm, newdata = new_test_df))
+
+## The predicted_df shows 10  earnings predictions that take into account variable that we created which we see much higher earnings for males then we do females as seen below. 
+
+predicted_df
+```
+
+
+```{r compute, include=TRUE}
+## Compute deviation (i.e. residuals)
+## The mean earn for our heights data frame shows a $ 23,154.77 mean for our ten earnings for our variables.
+mean_earn <- mean(heights_df$earn)
+mean_earn
+
+## Corrected Sum of Squares Total
+sst <- sum((mean_earn - heights_df$earn)^2)
+## As seen below we receive a value of 653257157128 which is the sum of squares total for the mean of earn from our heights data set. Which is known as the total amount of differences presented in a basic model that represents the how good the mean is as a model of the observed data.
+sst
+
+## Corrected Sum of Squares for Model
+ssm <- sum((mean_earn - predicted_df$earn)^2)
+## As seen below we calculate the model sum of squares by taking the mean_earn that we calculated and minus it by our predicted earnings to the second. Which measures the deviation of data points away from the mean value. As our result indicates a large degree of variability within the data set.
+ssm
+
+## Residuals
+## We can see our residuals for each and every earnings in the heights data frame.
+residuals <- heights_df$earn - predicted_df$earn
+residuals
+
+## Sum of Squares for Error
+## Next we calculate the Sum of Squares for Error which is the deviations predicted from actual empirical values of data. As the error is the difference between the observed value and the predicted value which we want to be as minimal as possible.
+sse <- sum(residuals^2)
+sse
+## R Squared
+## In R Squared we take the Corrected Sum of Squares for Model (SSM) and divide it by Corrected Sum of Squares Total (sst) Which is a statistical measure of how well the regression predictions approximate the real data points as seen below
+r_squared <- ssm / sst
+r_squared
+
+## Number of observations
+## I use the nrow function to determine the number of observations in our heights data set
+n <- NROW(heights_df$earn)
+n
+
+## Number of regression paramaters
+## As seen below we set the number of regression parameters to 8
+p <- 8
+p
+
+## Corrected Degrees of Freedom for Model
+## To get the Corrected Degrees of Freedom for Model we take the Number of regression parameters and minus it by three.
+dfm <- p - 3
+dfm
+
+## Degrees of Freedom for Error
+## Calculate the Degrees of Freedom for Error we take the Number of observations and minus it by the Number of regression parameters.As the Corrected Degrees of Freedom Total shows the number of independent values that can vary in an analysis without breaking any constraints
+dfe <- n - p
+dfe
+
+## Corrected Degrees of Freedom Total:   DFT = n - 1
+## When calculating the Corrected Degrees of Freedom Total we take the Number of observations and minus it by one As the Corrected Degrees of Freedom Total shows the number of independent values that can vary in an analysis without breaking any constraints that have been corrected.
+dft <- n -1
+dft
+
+## Mean of Squares for Model:   MSM = SSM / DFM
+## When calculating the Mean of Squares for Model we take the Corrected Sum of Squares for Model and divide it by the Corrected Degrees of Freedom for Model which gives us 514683792
+msm <- ssm / dfm
+msm
+
+## Mean of Squares for Error:   MSE = SSE / DFE
+## When we calculate the Mean of Squares for Error we are taking the Sum of Squares for Error and dividing it by the Degrees of Freedom for Error which gives us 622326573
+mse <- sse /dfe
+mse
+
+## Mean of Squares Total:   MST = SST / DFT
+## When we calculate the Mean of Squares Total we take the Corrected Sum of Squares Total and divide it by the Corrected Degrees of Freedom Total which gives us 548494674
+mst <- sst / dft
+mst
+
+## F Statistic
+## When we calculate the F Statistic we take the Mean of Squares for Model and divide by the Mean of Squares Total to get 0.8270317 This shows that the coefficients that was used in the model to improved the models fit by a large percent seen as 82.70%.
+f_score <- msm / mse
+f_score
+
+## Adjusted R Squared R2 = 1 - (1 - R2)(n - 1) / (n - p)
+## When we calculate the Adjusted R Squared we take one and minus it by (one - R Squared R^2)then times it by (Number of observations - one) then divide it by (Number of observations - Number of regression parameters) which gives us -0.001949506. As Adjusted R2 indicates how well terms fit a curve or line as we see it is a negative percentage meaning it does not fit well with the curve
+adjusted_r_squared <- 1 - (1 - r_squared)*(n-1) / (n-p)
+adjusted_r_squared
+
+```
+

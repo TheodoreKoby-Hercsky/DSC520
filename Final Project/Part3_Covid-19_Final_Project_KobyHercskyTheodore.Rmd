@@ -1,0 +1,661 @@
+---
+title: "Covid-19 Vaccination and Death Rate Final Report"
+author: "Theodore Koby-Hercsky"
+date: "6/05/2021"
+output: 
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse", "effects", "statmod", "Rcmdr")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+library(readxl)
+library(pastecs)
+library(psych)
+library(statmod)
+library(effects)
+library(plotly)
+library(zoo)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE)
+```
+
+## Set My working directory set to my final project
+setwd("~/Documents/Bellevue University Classes/DSC520/Final Project")
+
+# Introduction.
+## Overall, write a coherent narrative that tells a story with the data as you complete this section.
+
+
+
+# The problem statement 
+## Summarize the problem statement you addressed. 
+The problem statement for this research topic is to determine which Covid-19 vaccine is currently being receiving the most and least around the United State by state. While also determining who is at the highest risk for death due to Covid-19 in regards to variables such as race, sex, age, and more.  
+
+I will filter my new data files and create tables and charts to help show the outcome of variables such as age, sex, race, and state living in to determine the highest mortality rate.  I will also be researching into the three vaccinations that are currently being used known as Pfizer, Moderna, and Johnson and Johnson vaccine that we can determine the sum of all vaccines received for each company and which states are currently having the highest rate of vaccination.
+
+# Addressing the problem statement
+## Summarize how you addressed this problem statement (the data used and the methodology employed, including a recommendation for a model that could be implemented). 
+## Addressing the Covid-19 Vaccines problem statement.
+I addressed the problem statement by researching into the three vaccinations that are currently being used known as Pfizer, Moderna, and Johnson and Johnson vaccine. As seen below I pulled and cleaned the data frames for each of the companies vaccines data.
+
+## How to import and clean the Covid-19 Vaccines data
+As seen below I have imported my data sets for Covid-19 Vaccines for each company and cleaned and filtered the data sets accordingly. 
+```{r load Vaccine data, include=TRUE}
+## Pulling the Dataframe for the Vaccine administered for Pfizer by state by week data set.
+
+COVID_19_Vaccine_Distribution_Pfizer <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Pfizer.csv")
+View(COVID_19_Vaccine_Distribution_Pfizer)
+head(COVID_19_Vaccine_Distribution_Pfizer)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Pfizer)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Pfizer)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Pfizer <- subset(COVID_19_Vaccine_Distribution_Pfizer, COVID_19_Vaccine_Distribution_Pfizer$`1st Dose Allocations` >= "1")
+
+## Next I will be removing the variable 2nd Dose Allocations as these values are the same as the values in the 1st Dose Allocations
+COVID_19_Vaccine_Distribution_Pfizer$`2nd Dose Allocations` <- NULL
+
+## I also want to add a new variable to my dataframe that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Pfizer$Company <- "Pfizer"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+
+## Also when viewing this data frame I can filter the 1st dose to determine which states are giving the most doses of the Pfizer vaccine as it showed California was the highest
+
+
+## Pulling the Dataframe for the Vaccine administered for Moderna by state by week data set
+
+COVID_19_Vaccine_Distribution_Moderna <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Moderna.csv")
+View(COVID_19_Vaccine_Distribution_Moderna)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Moderna)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Moderna)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Moderna <- subset(COVID_19_Vaccine_Distribution_Moderna, COVID_19_Vaccine_Distribution_Moderna$`1st Dose Allocations` >= "1")
+
+## Next I will be removing the variable 2nd Dose Allocations as these values are the same as the values in the 1st Dose Allocations
+COVID_19_Vaccine_Distribution_Moderna$`2nd Dose Allocations` <- NULL
+
+## I also want to add a new variable to my dataframe that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Moderna$Company <- "Moderna"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+ 
+## Pulling the Dataframe for the Vaccine administered for Johnson and Johnson by state by week data set.
+COVID_19_Vaccine_Distribution_Johnson <- read_csv("CDC Covid Data/COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Janssen.csv")
+View(COVID_19_Vaccine_Distribution_Johnson)
+head(COVID_19_Vaccine_Distribution_Johnson)
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Vaccine_Distribution_Johnson)
+
+## As seen above our date is stored as a character which I am going to update to be a date.
+
+COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations` <- as.Date(COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations`, format = "%m/%d/%y")
+## When we use the str function again we see that the week of allocations is now formatted as a date.
+str(COVID_19_Vaccine_Distribution_Johnson)
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Vaccine_Distribution_Johnson)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+
+## I notice that we have values that are zero for 1st dose allocation which we are going to remove due to the fact that these values are not justifiable as the can be bad data.
+
+COVID_19_Vaccine_Distribution_Johnson <- subset(COVID_19_Vaccine_Distribution_Johnson, COVID_19_Vaccine_Distribution_Johnson$`1st Dose Allocations` >= "1")
+
+## I also want to add a new variable to my data frame that is simply the name of the companies shot.
+COVID_19_Vaccine_Distribution_Johnson$Company <- "Johnson"
+
+## After all the necessary changes have been made we can now use the str and summary functions to verify our data before moving on to our next data frame.
+str(COVID_19_Vaccine_Distribution_Johnson)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+```
+
+Which we can determine the sum of all vaccines received for each company and which states are currently having the highest rate of vaccination. As shown below we see that the Moderna has the highest doses allocated at 672600 while Pfizer is right behind at 644670 being its max and Johnson last at 572700. 
+
+```{r Summary of Vaccine, include=TRUE}
+summary(COVID_19_Vaccine_Distribution_Pfizer)
+summary(COVID_19_Vaccine_Distribution_Moderna)
+summary(COVID_19_Vaccine_Distribution_Johnson)
+```
+
+#plots
+As seen below I have sorted through my vaccine data and have created a new data frame that shows the sum of doses for each company and plots them.
+
+```{r filter and ggplot, include=TRUE}
+## First I will view all data sets for the company Vaccines.
+View(COVID_19_Vaccine_Distribution_Pfizer)
+head(COVID_19_Vaccine_Distribution_Pfizer)
+View(COVID_19_Vaccine_Distribution_Moderna)
+head(COVID_19_Vaccine_Distribution_Moderna)
+View(COVID_19_Vaccine_Distribution_Johnson)
+head(COVID_19_Vaccine_Distribution_Johnson)
+
+## Next I will create new data frames by filtering my data sets to only have data for 2020-05-10.
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Pfizer
+Date_COVID_19_Vaccine_Distribution_Pfizer<-filter(COVID_19_Vaccine_Distribution_Pfizer, COVID_19_Vaccine_Distribution_Pfizer$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Pfizer)
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Pfizer vaccine at 575,640 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Pfizer, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Moderna
+Date_COVID_19_Vaccine_Distribution_Moderna<-filter(COVID_19_Vaccine_Distribution_Moderna, COVID_19_Vaccine_Distribution_Moderna$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Moderna)
+head(Date_COVID_19_Vaccine_Distribution_Moderna)
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Moderna vaccine at 438,100 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Moderna, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## Data frame Date_COVID_19_Vaccine_Distribution_Moderna
+Date_COVID_19_Vaccine_Distribution_Johnson<-filter(COVID_19_Vaccine_Distribution_Johnson, COVID_19_Vaccine_Distribution_Johnson$`Week of Allocations`=="2020-05-10")
+View(Date_COVID_19_Vaccine_Distribution_Johnson)
+head(Date_COVID_19_Vaccine_Distribution_Johnson)
+
+## created a plot that shows the vaccine rate per state for the week of 2020-05-10 that shows California at the highest vaccinated state for the Johnson & Johnson vaccine at 67,600 doses allocated.
+ggplot(Date_COVID_19_Vaccine_Distribution_Johnson, aes(x=`1st Dose Allocations`, y=`Jurisdiction`))+geom_point(aes(fill=`Jurisdiction`))
+
+## As seen in these plots we can state that California has reached the highest doses allocated by any state for each companies vaccine while the Pfizer vaccine has rained supreme over the other vaccines. 
+
+## Next I am going to create values for the sum of doses for each company for the week of 2020-05-10 and vectors for the amounts and company names.
+Pfizer_1st_Dose_Sum <- sum(COVID_19_Vaccine_Distribution_Pfizer$`1st Dose Allocations`)
+Moderna_1st_Dose_Sum <-sum(COVID_19_Vaccine_Distribution_Moderna$`1st Dose Allocations`)
+Johnson_1st_Dose_Sum <-sum(COVID_19_Vaccine_Distribution_Johnson$`1st Dose Allocations`)
+Company <- c("Pfizer", "Moderna", "Johnson & Johnson")
+Sum_of_Doses <- c(78987870, 68561180, 12644800)
+
+## Create data frame from the Company and Sum of doses values
+Sum_of_Vaccine <- data.frame(Company, Sum_of_Doses)
+View(Sum_of_Vaccine)
+head(Sum_of_Vaccine)
+## Next I will create a bar chart that shows the doses allocated by each company in the United States for the week of 2020-05-10 that shows how many vaccines Moderna and Pfizer administered in comparison to Johnson & Johnson.
+ggplot(Sum_of_Vaccine, aes(x=`Company`, y=`Sum_of_Doses`))+geom_col(aes(fill = `Company`))
+```
+
+The data shows us that the company with highest amount of vaccines administered has gone to Pfizer at 78,987,870. While we also have seen that each company has administered the highest number of vaccines in California which was interesting as it seems as if California is so far behind in opening indoor dinning and just getting started with opening amusement parks such as Disney. As Disney Land in California is currently only allowing 25% occupancy and lines are not allowed to be fully inside the building meaning if the ride usually has a line inside as Disney has currently changed the line queue to be mostly outside to follow CDC guide lines.  
+
+# Addressing the Covid-19 death rates problem statement.
+I addressed the problem statement by researching into the data frames that have data on the death rates due to Covid-19 by variables such as race, sex, education, and age. As seen below I pulled and cleaned the data frames for our data on Covid-19 deaths.
+
+```{r load Covid-19 data, include=TRUE}
+## The first Data Set is the Covid-19 Deaths by race, sex, and age data frame that I will pull and clean
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age <- read_csv("CDC Covid Data/AH_Provisional_COVID-19_Deaths_by_Educational_Attainment__Race__Sex__and_Age.csv")
+View(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+head(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## After viewing this I am going to delete the variable date as of and also use the names function to update the variables names that are needed.
+## Delete variable date as of.
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Data as of` <- NULL
+## Change variable names
+names(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)[3]<-"Education"
+names(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)[4]<-"Race"
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## As seen above our dates are stored as a character which I am going to update to be a date and also delete the date as of as that is unneeded.
+
+## change the format of the start date
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Start Date` <- as.Date(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`End Date` <- as.Date(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`End Date`, format = "%m/%d/%y")
+
+## I also noticed earlier that the variable education has some Unknown values which I would like to remove due to the fact that these values are not justifiable as the can be bad data.
+
+## As seen below I removed any value that was Unknown in Education
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age <-COVID_19_Deaths_by_Educational_Race_Sex_and_Age[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Education !="Unknown", ]
+
+## After we look over this I will use complete.case and summary function to search for NAs and any other issues we might find with our data.
+complete.cases(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will pull the data frame Covid-19 Deaths by education and race and filter and clean up this data. 
+COVID_19_Deaths_by_Race_and_Educational <- read_csv("CDC Covid Data/AH_Provisional_COVID-19_Deaths_by_Race_and_Educational_Attainment.csv")
+View(COVID_19_Deaths_by_Race_and_Educational)
+head(COVID_19_Deaths_by_Race_and_Educational)
+
+## After viewing this I am going to Delete variable date as of and use the names function to update the variables names that are needed.
+COVID_19_Deaths_by_Race_and_Educational$`Data as of` <- NULL
+names(COVID_19_Deaths_by_Race_and_Educational)[3]<-"Education"
+names(COVID_19_Deaths_by_Race_and_Educational)[4]<-"Race"
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_by_Race_and_Educational)
+
+## As seen above our dates are stored as a character which I am going to update to be a date.
+
+## change the format of the start date
+COVID_19_Deaths_by_Race_and_Educational$`Start Date` <- as.Date(COVID_19_Deaths_by_Race_and_Educational$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_by_Race_and_Educational$`End Date` <- as.Date(COVID_19_Deaths_by_Race_and_Educational$`End Date`, format = "%m/%d/%y")
+
+## As seen below I removed any value that was Unknown in Education
+COVID_19_Deaths_by_Race_and_Educational <-COVID_19_Deaths_by_Race_and_Educational[COVID_19_Deaths_by_Race_and_Educational$Education !="Unknown", ]
+
+## The final step we will take for this data frame is to use complete.case and summary function to double check our data before moving on.
+complete.cases(COVID_19_Deaths_by_Race_and_Educational)
+summary(COVID_19_Deaths_by_Race_and_Educational)
+
+## The final data set I will be pulling and cleaning is the Covid-19 Deaths by age in years
+
+COVID_19_Deaths_Counts_by_Age_in_Years <- read_csv("CDC Covid Data/Provisional_COVID-19_Deaths_Counts_by_Age_in_Years.csv")
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## First I will be deleting the variable date as of.
+COVID_19_Deaths_Counts_by_Age_in_Years$`Data as of` <- NULL
+
+## Next I will use the str function to look at my data to determine if it is imputed as a character, number, or date. 
+str(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## As seen above our dates are stored as a character which I am going to update to be a date.
+
+## change the format of the start date
+COVID_19_Deaths_Counts_by_Age_in_Years$`Start Date` <- as.Date(COVID_19_Deaths_Counts_by_Age_in_Years$`Start Date`, format = "%m/%d/%y")
+## Change the format of the end date 
+COVID_19_Deaths_Counts_by_Age_in_Years$`End Date` <- as.Date(COVID_19_Deaths_Counts_by_Age_in_Years$`End Date`, format = "%m/%d/%y")
+
+## I am going to create a new variable to add new insights on the percentage of deaths that are from Covid-19.
+
+COVID_19_Deaths_Counts_by_Age_in_Years["COVID-19 Death Percentage"] <- COVID_19_Deaths_Counts_by_Age_in_Years$`COVID-19 Deaths`/COVID_19_Deaths_Counts_by_Age_in_Years$`Total deaths`
+
+## The final step we will take for this data frame is to use complete.case and summary function to double check our data before moving on.
+complete.cases(COVID_19_Deaths_Counts_by_Age_in_Years)
+summary(COVID_19_Deaths_Counts_by_Age_in_Years)
+```
+
+Seen below is some ways I sliced and diced the data in different ways by creating new variables such as death percentages and also checked for NAs and get rid of them,
+#or join separate data frames to create new summary information
+
+```{r Slice data sets, include=TRUE}
+## The data set titled COVID_19_Deaths_by_Educational_Race_Sex_and_Age is seen below which I will determine how I can slice and dice to create new information.
+
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## I am going to create a new variable to add new insights on the percentage of deaths that are from Covid-19.
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age["COVID-19 Death Percentage"] <- COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`COVID-19 Deaths`/ COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Total Deaths`
+
+## Use summary to search for NAs or other issues with new variable
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will get rid of ant NA that have occurred due to the fact there are zeros in both the COVID-19 deaths and total deaths variables
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age[is.na(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)] <- 0.00
+
+## View summary again to show we have no more NAs
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+
+## Next I will view the COVID_19_Deaths_Counts_by_Age_in_Years data frame to see if we can create any new variable.
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+## As seen in the data frame we can add a new variable that calculates the deaths that are not related to COVID-19
+COVID_19_Deaths_Counts_by_Age_in_Years["Deaths Unrelated to COVID-19"] <- COVID_19_Deaths_Counts_by_Age_in_Years$`Total deaths`-COVID_19_Deaths_Counts_by_Age_in_Years$`COVID-19 Deaths`
+
+## As seen in the the data frame now as age goes up the amount of deaths due to COVID-19 goes up and down as the age goes down with a little spike for 1 year old. 
+View(COVID_19_Deaths_Counts_by_Age_in_Years)
+head(COVID_19_Deaths_Counts_by_Age_in_Years)
+
+## Next I will view the COVID_19_Deaths_by_Race_and_Educational data frame to see if we can create any new variable.
+View(COVID_19_Deaths_by_Race_and_Educational)
+head(COVID_19_Deaths_by_Race_and_Educational)
+## As seen in the data frame we can add new variables that calculates the deaths that are not related to COVID-19 and percentage of deaths that are due to COVID-19
+## Deaths Unrelated to COVID-19
+COVID_19_Deaths_by_Race_and_Educational["Deaths Unrelated to COVID-19"] <- COVID_19_Deaths_by_Race_and_Educational$`Total Deaths`-COVID_19_Deaths_by_Race_and_Educational$`COVID-19 Deaths`
+## COVID-19 Death Percentage
+COVID_19_Deaths_by_Race_and_Educational["COVID-19 Death Percentage"] <- COVID_19_Deaths_by_Race_and_Educational$`COVID-19 Deaths`/COVID_19_Deaths_by_Race_and_Educational$`Total Deaths`
+## Use summary function to view the new added variables
+summary(COVID_19_Deaths_by_Race_and_Educational)
+## As we can see we have a lot more deaths that are unrelated to COVID-19 than deaths that are from COVID-19 which will help tie into key questions I have in regards to COVID-19 and the whole epidemic in general.
+```
+
+```{r Summary Vac, include=TRUE}
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+```
+As seen above the max deaths for COVID-19 is 76871.0 while the total deaths is 670295.0. We can easily calculate the percent of COVID-19 deaths by dividing COVID-19 deaths by total deaths. As seen below: Which shows a 11.47% COVID-19 death rate. This tells us that there is a slightly low but still terrifying death rate for individuals that catch te Covid-19 virus.  
+```{r divide, include=TRUE}
+76871.0 /670295.0
+```
+
+## When it comes to age and sex which combination had the highest death rate for each sex and age group? 
+
+```{r Summary Vac, include=TRUE}
+summary(COVID_19_Deaths_by_Educational_Race_Sex_and_Age)
+# Next I will update all the values in the age group variable such as changing '0-17 years' to '17' and so on for each age group as seen in the code below.
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`=="0-17 years"]<-17
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`=="18-49 years"]<-49
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`=="50-64 years"]<-64
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`=="65 years and over"]<-65
+
+# I also updated the Race variable to clean up the values to shorten the names.
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race=="Non-Hispanic American Indian or Alaska Native"]<-'American Indian or Alaska Native'
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race=="Non-Hispanic Asian"]<-'Asian'
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race=="Non-Hispanic Black"]<-'Black'
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race=="Non-Hispanic Native Hawaiian or Other Pacific Islander"]<-'Native Hawaiian or Pacific Islander'
+
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race[COVID_19_Deaths_by_Educational_Race_Sex_and_Age$Race=="Non-Hispanic White"]<-'White'
+
+# Next I am going to update the Age Group variable to numeric
+COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`<- as.numeric(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`)
+
+# I ran a correlation test between age and covid-19 deaths and found as seen below that we have a 22.18% correlation
+cor(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`, COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`COVID-19 Deaths`)
+
+# As seen below I have created a scatter plot that shows that the deaths for individuals by Covid-19 has risen for the age groups 50 and 64 and 65 and above as we see females leading in death rates for our elderly population.
+ggplot(data = COVID_19_Deaths_by_Educational_Race_Sex_and_Age, mapping = aes(x =`Age Group`, y =`COVID-19 Deaths`)) + geom_point(aes(color = Sex))
+
+# Next I created a faceted plot by splitting further by sex and creating separate plots for each race. Which shows us that we have seen the highest spike in the elderly community races such as white, hispanic, and black in that order.
+ggplot(data = COVID_19_Deaths_by_Educational_Race_Sex_and_Age, mapping = aes(x =`Age Group`, y = `COVID-19 Deaths`, color = Sex)) + geom_line() + facet_wrap(facets = vars(Race))
+
+```
+As seen in the graphs above we see that the race variable show that white, hispanic, black, and Asian races have an increase in deaths as age went up. In these graphs we see that the race white saw the highest death rate which started its upward trend in the late 40s age group and spiking in the 65 plus range with females out numbering the males in the death rate as males reached almost 70,000 deaths in the 65 plus age group while females skyrocketed to almost 80,000 deaths in 65 plus. Our next highest Covid-19 death rate we see that Hispanics show a spike in deaths in the late 40s as well with males being a little higher through the age groups as males spike over 20,000 deaths. In conclusion I see that for some races we see an increase in deaths over the age group but we also see little to no increase in deaths for races such as American Indian, Native Hawaiian, Asian, and other as we see little to know deaths throughout the graphs but this could be due to incomplete data.
+## When it comes to race which ethnicity did, we find to have the highest death rate from Covid-19?
+## Did the education level have an effect on the death rate of different ethnicities?
+
+```{r summary Covid, include=TRUE}
+summary(COVID_19_Deaths_by_Race_and_Educational)
+
+# I am updated the Race variable to clean up the values to shorten the names.
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic American Indian or Alaska Native"]<-'American Indian or Alaska Native'
+
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic Asian"]<-'Asian'
+
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic Black"]<-'Black'
+
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic More than one race"]<-'More than one race'
+
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic Native Hawaiian or Other Pacific Islander"]<-'Native Hawaiian or Pacific Islander'
+
+COVID_19_Deaths_by_Race_and_Educational$Race[COVID_19_Deaths_by_Race_and_Educational$Race=="Non-Hispanic White"]<-'White'
+
+# I created a ggplot that shows the amount of deaths due to COVID-19 in comparison to total deaths. Which we see a steady increase and correlation between the two. While we see a high death rate for white individuals that have received only a high school diploma or GED. As seen across all degree levels we see the highest death rate with whites while the lowest death rate is seen with individuals that have received a doctorates degree
+ggplot(data = COVID_19_Deaths_by_Race_and_Educational, aes(x = `COVID-19 Deaths`, y = `Total Deaths`, color = Race)) + geom_point() + facet_wrap(vars(Education)) + theme_bw()
+```
+As seen in my plots above it is determined that the white race shows the highest number of deaths due to Covid-19 in almost all education levels as whites that graduated high school or received a GED saw the highest death rate that totals up to almost 120,000 deaths while the next highest would be around 30,000 deaths for whites that have some college credits but no degree. On another note the 120,000 deaths for whites for High school degree or GED can be seen as an outlier as no other race has an amount that high in an of the other education levels. As seen in these charts we can see some effect on the education level and the number of deaths due to Covid-19 as for most of our graphs we see as the education level goes up the number of deaths decreases as seen in the individuals with masters and or doctorates degrees as the amount of deaths is lower in comparison to individuals with a GED and or some college credits. 
+## In the time period of 01/01/2020 to 04/30/2021 did we see an increase in Covid-19 deaths as the age of the individuals rise? If so, did sex have an effect on the number of deaths?
+
+```{r summary Covid death, include=TRUE}
+summary(COVID_19_Deaths_Counts_by_Age_in_Years)
+# First I need to update the Age Years variable to only show the age and be numeric.
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="<1 year"]<-0.5
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="01 Years"]<-1
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="02 Years"]<-2
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="03 Years"]<-3
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="04 Years"]<-4
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="05 Years"]<-5
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="06 Years"]<-6
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="07 Years"]<-7
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="08 Years"]<-8
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="09 Years"]<-9
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="10 Years"]<-10
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="11 Years"]<-11
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="12 Years"]<-12
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="13 Years"]<-13
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="14 Years"]<-14
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="15 Years"]<-15
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="16 Years"]<-16
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="17 Years"]<-17
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="18 Years"]<-18
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="19 Years"]<-19
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="20 Years"]<-20
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="21 Years"]<-21
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="22 Years"]<-22
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="23 Years"]<-23
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="24 Years"]<-24
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="25 Years"]<-25
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="26 Years"]<-26
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="27 Years"]<-27
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="28 Years"]<-28
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="29 Years"]<-29
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="30 Years"]<-30
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="31 Years"]<-31
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="32 Years"]<-32
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="33 Years"]<-33
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="34 Years"]<-34
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="35 Years"]<-35
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="36 Years"]<-36
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="37 Years"]<-37
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="38 Years"]<-38
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="39 Years"]<-39
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="40 Years"]<-40
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="41 Years"]<-41
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="42 Years"]<-42
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="43 Years"]<-43
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="44 Years"]<-44
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="45 Years"]<-45
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="46 Years"]<-46
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="47 Years"]<-47
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="48 Years"]<-48
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="49 Years"]<-49
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="50 Years"]<-50
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="51 Years"]<-51
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="52 Years"]<-52
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="53 Years"]<-53
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="54 Years"]<-54
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="55 Years"]<-55
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="56 Years"]<-56
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="57 Years"]<-57
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="58 Years"]<-58
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="59 Years"]<-59
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="60 Years"]<-60
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="61 Years"]<-61
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="62 Years"]<-62
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="63 Years"]<-63
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="64 Years"]<-64
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="65 Years"]<-65
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="66 Years"]<-66
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="67 Years"]<-67
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="68 Years"]<-68
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="69 Years"]<-69
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="70 Years"]<-70
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="71 Years"]<-71
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="72 Years"]<-72
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="73 Years"]<-73
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="70 Years"]<-70
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="74 Years"]<-74
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="75 Years"]<-75
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="76 Years"]<-76
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="77 Years"]<-77
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="78 Years"]<-78
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="79 Years"]<-79
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="80 Years"]<-80
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="81 Years"]<-81
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="82 Years"]<-82
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="83 Years"]<-83
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="84 Years"]<-84
+
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`[COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`=="85 Years and over"]<-85
+
+# Next I am going to update the Age Group variable to numeric
+COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`<-as.numeric(COVID_19_Deaths_Counts_by_Age_in_Years$`Age Years`)
+
+# In this line graph we see a steady increase in deaths by age due to Covid-19 so as the individuals age increases the more likely they are to die from the virus. We also see that females outs ways males in deaths due to the virus
+ggplot(data = COVID_19_Deaths_Counts_by_Age_in_Years, aes(x = `Age Years`, y = `COVID-19 Deaths`, color = Sex)) + geom_line()
+# As seen above we see an increase in deaths due to Covid-19 that started an upward trend as an individual high the age of 40 that had a steady increase that spiked once it hit the 85 plus group as we see deaths rise up for males to almost 75,000 deaths while females reached almost 100,000 deaths for the age group of 85 plus. 
+
+# Next I created a graph that shows the amount of deaths that are unrelated to Covid-19 which shows a similar graph but a little higher in spikes due to larger death rates
+ggplot(data = COVID_19_Deaths_Counts_by_Age_in_Years, aes(x = `Age Years`, y = `Deaths Unrelated to COVID-19`, color = Sex)) + geom_line()
+# While the graph above show the amount of deaths that are not associated with Covid-19 which showed an upward trend that has the same results but seen in a greater amount as Covid-19 deaths only showed at most a 15% of all total deaths. Which shows us that yes Covid-19 is a significant cause for death but we still have upwards of 85% of deaths that are not due to Covid-19 but for individuals that are reaching their 50 and over have a higher chance of dying from the virus in comparison to a healthy 20 year old.
+```
+In conclusion from the graphs and data above we see that there is an increase in deaths for individuals that have reached there 40s and up as the individuals age goes up they are more likely to die if they catch the virus compared to an individual that is younger and in good health. 
+
+# Analysis.
+## Summarize the interesting insights that your analysis provided. 
+In this report I have seen very interesting insights which have been some that I would not think would be the case in terms of Covid-19 vaccines and death rates due to the Virus. As seen in our sum of vaccines data frames we see that the doses for Pfizer is the highest at 78,987,870 while Moderna has the next with doses allocated at 68,561,180 while Johnson and Johnson is in last at 12,644,800 vaccines administered in the United States. Which is a statistic that I can see to be true as the Johnson and Johnson vaccine was distributed later and has had issues which has caused less doses to be administered. As seen in the sum of vaccines data frame below
+```{r summary vaccine, include=TRUE}
+head(Sum_of_Vaccine)
+```
+
+While we also have seen that each company has administered the highest number of vaccines in California with Pfizer administering at 575,640 while Moderna is at 438,100 and last but not least we have Johnson and Johnson at 67,600 for the week of May 10, 2020. These statistics I found very interesting as not much in California has been open due to the Covid-19 virus as Disney is just starting to open back up and there is still no indoor dining. 
+
+# Implications. 
+## Summarize the implications to the consumer (target audience) of your analysis.
+As seen in our data frame that focused on race, sex, and age of individuals that have died from the Covid-19 virus I found a correlation between age and Covid-19 deaths. As I used the cor function that allowed me to calculate the correlation between the two as seen below that showed us that we have a positive correlation at 0.221864 which means as the age goes up, we see that the number of deaths also increase
+```{r cor test, include=TRUE}
+cor(COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`Age Group`, COVID_19_Deaths_by_Educational_Race_Sex_and_Age$`COVID-19 Deaths`)
+```
+As seen below from our scatter plot below we see that as age increase the number of deaths also increase which backs up our outcome from our corelation test. Another interesting factor we see is that in our eldest age group which is the 65 plus in this data frame we see that females out do the males in the death rate as the females almost reach 80,000 deaths due to Covid-19. 
+```{r plot, include=TRUE}
+ggplot(data = COVID_19_Deaths_by_Educational_Race_Sex_and_Age, mapping = aes(x =`Age Group`, y =`COVID-19 Deaths`)) + geom_point(aes(color = Sex))
+```
+These statistics above show us that our target audience for concern is the elder population such as individuals in their late 40s and up as our 65 plus individuals are at the highest risk for death if they were to catch this virus. While the female population in the 65 plus category saw the highest rate of death which would make them the most vulnerable.
+
+# Limitations.
+Limitations that I have seen in my analysis would stem directly from the amount of data that has been collected on the data sets. As for the data frames on the vaccines I wish I had more information on age groups and races for the individuals in each state as this would help determine what age category, gender, and race were receiving the vaccine. This would allow me to do further research and see if the number of vaccines administered for each race, age group, and or gender influenced the number of deaths that have been see in our data frames on Covid-19 death rates. While another limitation I have seen is that I am not sure if all the data on Covid-19 deaths is complete such as each race did not seem to have an accurate number of deaths that have been reported to the CDC. As this can affect the accuracy of our data plots and statistics as our data stated whites had the highest death rate while Asian race showed very little to no deaths. While I can say either I our someone else can improve and or build on this report by either running further analysis and or pull new data from the CDC to get updated information.
+# Concluding Remarks
+
+# Work Cited
+## The original source of all my data that is hyper linked below comes directly from the CDC. 
+[Provisional_COVID-19_Death_Counts_by_Sex__Age__and_State](https://data.cdc.gov/NCHS/Provisional-COVID-19-Death-Counts-by-Sex-Age-and-S/9bhg-hcku)
+
+[COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Pfizer](https://data.cdc.gov/Vaccinations/COVID-19-Vaccine-Distribution-Allocations-by-Juris/saz5-9hgg)
+
+[COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Moderna](https://data.cdc.gov/Vaccinations/COVID-19-Vaccine-Distribution-Allocations-by-Juris/b7pe-5nws)
+
+[COVID-19_Vaccine_Distribution_Allocations_by_Jurisdiction_-_Janssen](https://data.cdc.gov/Vaccinations/COVID-19-Vaccine-Distribution-Allocations-by-Juris/w9zu-fywh)
+
+[AH_Provisional_COVID-19_Deaths_by_Educational_Attainment__Race__Sex__and_Age](https://data.cdc.gov/NCHS/AH-Provisional-COVID-19-Deaths-by-Educational-Atta/3ts8-hsrw)
+
+[AH_Provisional_COVID-19_Deaths_by_Race_and_Educational_Attainment](https://data.cdc.gov/NCHS/AH-Provisional-COVID-19-Deaths-by-Race-and-Educati/i6ej-9eac)
+
+[Provisional_COVID-19_Deaths_Counts_by_Age_in_Years](https://data.cdc.gov/NCHS/Provisional-COVID-19-Deaths-Counts-by-Age-in-Years/3apk-4u4f)
+
+

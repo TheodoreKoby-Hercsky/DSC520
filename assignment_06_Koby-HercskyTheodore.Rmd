@@ -1,0 +1,170 @@
+---
+title: "Assignment 6"
+author: "Theodore Koby-Hercsky"
+date: "5/3/2021"
+output: 
+  word_document: default
+  pdf_document: default
+  html_document: default 
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE
+)
+```
+
+## Set the working directory to the root of your DSC 520 directory
+setwd("~/Documents/Bellevue University Classes/DSC520/assignments/assignment06")
+
+## The heights.csv file 
+```{r}
+## I am importing readr from the library so I can use the read_csv function to create my student survey data frame.
+library(readr)
+## Creating the student survey data frame by using the read_csv function to pull my student survey data. 
+heights_df <- read_csv("data/r4ds/heights.csv")
+```
+
+## Load the ggplot2 library
+library(ggplot2)
+
+```{r age_linear_model, include=TRUE}
+## Fit a linear model using the `age` variable as the predictor and `earn` as the outcome
+age_lm <- lm(earn ~ age, data = heights_df)
+## When we fit our linear model by using our age variable as the predictor and earn as the outcome with the heights_df as our data we see coefficients for intercept and age which is the slope for the age predictor. 
+age_lm
+## I will view the full report by using summary of my age_lm model
+## As seen below we see that estimated salary to be $19,041.53 which is in our intercept.
+## While we see three stars against regression coefficients that implies the independent variable age is highly correlated with dependent variable earn with a linear relationship.
+summary(age_lm)
+```
+
+```{r prediction, include=TRUE}
+## Created a new age test data frame to incorporate different ages 
+newage_test_df <- data.frame(age = c(17,19,25,32,59,61,68,75,84,98))
+## Created an age list that is a sample of the 1192 from our heights data frame.
+age_list <- as.data.frame(sample(18:92, 1192, replace = TRUE))
+## Creating predictions using `predict()`
+## in this prediction I use the newage_test_df set to equal age and earn set to predict from our age_lm and the new data that was created in the data frame newage_test_df.
+age_predict_df <- data.frame(age = newage_test_df, earn=predict(age_lm, newdata = newage_test_df))
+## The age_predict_df shows 10 ages with a predicted earnings which we see as age goes up the predicted earnings goes up. 
+age_predict_df
+```
+
+
+```{r plot, include=TRUE}
+## Load the ggplot2 library
+library(ggplot2)
+## Plot the predictions against the original data
+## Created a ggplot that shows our predictions against our original data as we see an upward movement in earnings as age goes up in our prediction 
+ggplot(data = heights_df, aes(y = earn, x = age)) + geom_point(color='blue') + geom_line(color='red', data = age_predict_df, aes(y = earn, x = age))
+```
+```{r mean, include=TRUE}
+## I am finding the mean by using the mean function to create the mean earn
+mean_earn <- mean(heights_df$earn)
+## The mean for earn in our heights data set is $23,154.77
+mean_earn
+
+## Corrected Sum of Squares Total
+sst <- sum((mean_earn - heights_df$earn)^2)
+## As seen below we receive a value of 451591883937 which is the sum of squares total for the mean of earn from our heights data set. Which is known as the total amount of differences presented in a basic model that represents the how good the mean is as a model of the observed data.
+sst
+
+## Corrected Sum of Squares for Model
+## As seen below we calculate the model sum of squares by taking the mean_earn that we calculated and minus it by our predicted earnings to the second. Which measures the deviation of data points away from the mean value. As our result indicates a large degree of variability within the data set.
+ssm <- sum((mean_earn - age_predict_df$earn)^2)
+## The model sum of squares is seen as 89018275
+ssm
+## Residuals
+## We can see our residuals for each and every earnings in the age predict data frame.
+residuals <- heights_df$earn - age_predict_df$earn
+residuals
+
+## Sum of Squares for Error
+## Next we calculate the Sum of Squares for Error which is the deviations predicted from actual empirical values of data. As the error is the difference between the observed value and the predicted value which we want to be as minimal as possible.
+sse <- sum(residuals^2)
+sse
+
+## R Squared R^2 = SSM\SST
+## In R Squared we take the Corrected Sum of Squares for Model (SSM) and devide it by Corrected Sum of Squares Total (sst) Which is a statistical measure of how well the regression predictions approximate the real data points
+r_squared <- ssm / sst
+r_squared
+
+## Number of observations
+## I use the nrow function to determine the number of observations in our heights data set
+n <- NROW(heights_df$earn)
+n
+
+## Number of regression parameters
+## As seen below we set the number of regression parameters to two
+p <- 2
+p
+
+## Corrected Degrees of Freedom for Model (p-1)
+## To get the Corrected Degrees of Freedom for Model we take the Number of regression parameters and minus it by one 
+dfm <- p -1
+dfm
+
+## Degrees of Freedom for Error (n-p)
+## to calculate the Degrees of Freedom for Error we take the Number of observations and minus it by the Number of regression parameters.As the Corrected Degrees of Freedom Total shows the number of independent values that can vary in an analysis without breaking any constraints
+dfe <- n - p
+dfe
+
+## Corrected Degrees of Freedom Total:   DFT = n - 1
+## When calculating the Corrected Degrees of Freedom Total we take the Number of observations and minus it by one As the Corrected Degrees of Freedom Total shows the number of independent values that can vary in an analysis without breaking any constraints that have been corrected.
+dft <- n -1
+dft
+
+## Mean of Squares for Model:   MSM = SSM / DFM
+## When calculating the Mean of Squares for Model we take the Corrected Sum of Squares for Model and divide it by the Corrected Degrees of Freedom for Model which gives us 89018275
+msm <- ssm / dfm
+msm
+
+## Mean of Squares for Error:   MSE = SSE / DFE
+## When we calculate the Mean of Squares for Error we are taking the Sum of Squares for Error and dividing it by the Degrees of Freedom for Error which gives us 384903714
+mse <- sse /dfe
+mse
+
+## Mean of Squares Total:   MST = SST / DFT
+## When we calculate the Mean of Squares Total we take the Corrected Sum of Squares Total and divide it by the Corrected Degrees of Freedom Total which gives us 379170348
+mst <- sst / dft
+mst
+
+## F Statistic F = MSM/MSE
+## When we calculate the F Statistic we take the Mean of Squares for Model and divide by the Mean of Squares Total to get 0.2312741 This shows that the coefficients that was used in the model improved the model’s fit by a small percent seen as 0.2312741.
+f_score <- msm / mse
+f_score
+
+## Adjusted R Squared R2 = 1 - (1 - R2)(n - 1) / (n - p)
+## When we calculate the Adjusted R Squared we take one and minus it by (one - R Squared R^2)then times it by (Number of observations - one) then divide it by (Number of observations - Number of regression parameters) which gives us -0.0006430494. As Adjusted R2 indicates how well terms fit a curve or line as we see it is a negative percentage meaning it does not fit well with the curve
+adjusted_r_squared <- 1 - (1 - r_squared)*(n-1) / (n-p)
+adjusted_r_squared
+
+## Calculate the p-value from the F distribution
+## when we calculate the p-value from the F distribution we get 0.630669 Which means the results have a 63.06% probability of being completely random and not due to anything in the experiment
+p_value <- pf(f_score, dfm, dft, lower.tail=F)
+p_value
+```
+
+
+
